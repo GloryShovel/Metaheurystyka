@@ -1,4 +1,5 @@
 #include <math.h>
+#include <ctime>
 #include <iostream>
 #include <vector>
 #include <random>
@@ -106,6 +107,18 @@ public:
     }
 
     //-------------------------------------------------------------------------------------- Methods
+    bool equals(Solution s){
+        if(this->Set == s.Mask){
+            if(this->Mask == s.Mask){
+                return true;
+            } else{
+                return false;
+            }
+        }else{
+            return false;
+        }
+    }
+
     //Generates first mask
     void generateSolution(){
         std::random_device rd;
@@ -159,6 +172,7 @@ public:
             return vector;
         }
     }
+
     //if vector is unwanted set it to {0,0,...,0,1} or {1,1,...,1,0}
     void checkForUnwantedMask(Solution s){
         int atFirst = s.Mask.at(0);
@@ -171,6 +185,7 @@ public:
                 isUnwantedVector = true;
             }
         }
+        //TODO: handle unwanted vector in different place
         //Handle unwanted vector
         if (isUnwantedVector) {
             std::vector<int> temp;
@@ -190,8 +205,9 @@ public:
 //            std::cout << temp.at(0) << "..." << temp.at(temp.size()-1) << std::endl;
         }
     }
-    //Generate object with new solution
-    Solution generateNextSolution(bool incrementing){
+
+    //Generate object with new solution (for brute forcing solution)
+    Solution generateIncrementedSolution(bool incrementing){
         Solution s = *this;
         if(incrementing){
             s.Mask = incrementVector(s.Mask, s.Mask.size()-1);
@@ -203,13 +219,18 @@ public:
     }
 
     //Generate list of neighbouring solutions (amount is equal to neighbours on each side). On left side solutions are reversed
-    std::vector<Solution> neighbourList(int amount){
+    std::vector<Solution> neighbourList(){
         std::vector<Solution> result;
-        for (int i = 0; i < amount; i++) {
-            result.push_back(generateNextSolution(false));
-        }
-        for (int i = 0; i < amount; i++) {
-            result.push_back(generateNextSolution(true));
+        for (int i = 0; i < this->Mask.size(); i++) {
+            Solution s = *this;
+            if(s.Mask.at(i) == 0){
+                s.Mask.at(i) = 1;
+            }else {
+                s.Mask.at(i) = 0;
+            }
+            //DEV STUFF
+//            s.toStringMask();
+            result.push_back(s);
         }
         return result;
     }
@@ -232,6 +253,8 @@ std::vector<int> generateVector(int difficulty){
             break;
         case 2: mode = 23;
             break;
+        case 3: mode = 25;
+            break;
         default: std::cout << "Yo its out of range difficulty. Don't try to burn your machine XD" << std::endl;
             break;
     }
@@ -243,23 +266,30 @@ std::vector<int> generateVector(int difficulty){
 }
 
 Solution bruteForce(Solution solution){
+    clock_t time = clock();
     Solution next = solution, best = solution;
     do{
-       next = next.generateNextSolution(true);
+       next = next.generateIncrementedSolution(true);
        if(next.score() < best.score()){
            best = next;
        }
        //TODO:  save this to make plot out of it
 //       std::cout << next.score() << std::endl;
     } while (next.Mask != solution.Mask);
+
+    //Write time of execution in console
+    time = clock() - time;
+    std::cout << "Time of brute forcing the solution: " << time << std::endl;
+    std::cout << "Time of brute forcing the solution: " << time/CLOCKS_PER_SEC << "sec" << std::endl;
     return best;
 }
 
-Solution hillClimb(Solution solution, int accuracy){
+Solution hillClimb(Solution solution){
+    clock_t time = clock();
     Solution best, nextBest = solution;
     do{
         best = nextBest;
-        std::vector<Solution> neighbours = nextBest.neighbourList(accuracy);
+        std::vector<Solution> neighbours = nextBest.neighbourList();
         for (int i = 0; i < neighbours.size(); i++) {
             if(neighbours.at(i).score() < nextBest.score()){
                 nextBest = neighbours.at(i);
@@ -267,6 +297,46 @@ Solution hillClimb(Solution solution, int accuracy){
         }
     } while(best.score() != nextBest.score());
 
+    //Write time of execution in console
+    time = clock() - time;
+    std::cout << "Time of climbing to the solution: " << time << std::endl;
+    std::cout << "Time of climbing to the solution: " << time/CLOCKS_PER_SEC << "sec" << std::endl;
+    return best;
+}
+
+Solution tabu(Solution solution){
+    int iterations;
+    std::cout << "How many iterations?" << std::endl;
+    std::cin >> iterations;
+
+    clock_t time = clock();
+    Solution best = solution, nextBest = solution;
+    std::vector<Solution> tabuList;
+    tabuList.push_back(nextBest);
+
+    for(int i = 0; i<iterations; i++){
+        if(best.score() > nextBest.score()){
+            best = nextBest;
+        }
+
+        //if neighbour is better then nextBest then search tabuList (did we already saw this Solution)
+        std::vector<Solution> neighbours = nextBest.neighbourList();
+        for (int i = 0; i < neighbours.size(); i++){
+            if(neighbours.at(i).score() < nextBest.score()){
+                for (int j = 0; j < tabuList.size(); j++) {
+                    if(!tabuList.at(j).equals(neighbours.at(i))){
+                        nextBest = neighbours.at(i);
+                    }
+                }
+            }
+        }
+        tabuList.push_back(nextBest);
+    }
+
+    //Write time of execution in console
+    time = clock() - time;
+    std::cout << "Time of tabu searching the solution: " << time << std::endl;
+    std::cout << "Time of tabu searching the solution: " << time/CLOCKS_PER_SEC << "sec" << std::endl;
     return best;
 }
 
@@ -295,7 +365,7 @@ int main( int argc, char** argv )
             std::cout << std::endl;
             problem.setAll(fileName, option);
         } else if (option == 2) {
-            std::cout << "What difficulty? (0,1,2)" << std::endl;
+            std::cout << "What difficulty? (0,1,2,3)" << std::endl;
             std::cin >> option;
             std::cout << std::endl;
             problem.setAll(generateVector(option));
@@ -307,8 +377,9 @@ int main( int argc, char** argv )
             std::cout << "What type of algorithm to use?" << std::endl;
             std::cout << "1.Brute force." << std::endl;
             std::cout << "2.Hill climb" << std::endl;
-            std::cout << "3.All" << std::endl;
-            std::cout << "4.All without brute force" << std::endl;
+            std::cout << "3.Tabu" << std::endl;
+            std::cout << "4.All" << std::endl;
+            std::cout << "5.All without brute force" << std::endl;
             std::cin >> option;
             std::cout << std::endl;
 
@@ -319,21 +390,31 @@ int main( int argc, char** argv )
                 brute.toString();
                 break;
             } else if (option == 2) {
-                Solution hill = hillClimb(problem, hillAccuracy);
+                Solution hill = hillClimb(problem);
                 hill.toString();
                 break;
             } else if (option == 3) {
+                Solution tab = tabu(problem);
+                tab.toString();
+                break;
+            } else if (option == 4) {
                 std::cout << "BRUTE FORCE:" << std::endl;
                 Solution brute = bruteForce(problem);
                 brute.toString();
                 std::cout << "HILL CLIMB:" << std::endl;
-                Solution hill = hillClimb(problem, hillAccuracy);
+                Solution hill = hillClimb(problem);
                 hill.toString();
+                std::cout << "TABU:" << std::endl;
+                Solution tab = tabu(problem);
+                tab.toString();
                 break;
-            } else if (option == 4) {
+            } else if (option == 5) {
                 std::cout << "HILL CLIMB:" << std::endl;
-                Solution hill = hillClimb(problem, hillAccuracy);
+                Solution hill = hillClimb(problem);
                 hill.toString();
+                std::cout << "TABU:" << std::endl;
+                Solution tab = tabu(problem);
+                tab.toString();
                 break;
             } else {
                 std::cout << "That's not an option" << std::endl;
