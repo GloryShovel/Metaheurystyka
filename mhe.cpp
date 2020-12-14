@@ -187,15 +187,45 @@ Solution simulatedAnnealing(Solution problem, int iterations = 100, auto f = [](
 Specimen geneticAlgorithm(Population population, int iterations){
     Specimen best = population.population.at(0);
 
+    //UI - selecting selection
+    std::cout << "What selection?" << std::endl;
+    std::cout << "1.Tournament" << std::endl;
+    std::cout << "2.Roulette" << std::endl;
+    int selectionType = 0;
+    std::cin >> selectionType;
+    std::cout << std::endl;
+
     for (int i = 0; i < iterations; i++) {
+
         //Searching for best in current population
         for (int j = 0; j < population.population.size(); j++) {
             if(best.fitness() < population.population.at(j).fitness()){
                 best = population.population.at(j);
             }
         }
+
+        //Selection select
+        std::vector<Specimen> partners;
+        if(selectionType == 1){
+            partners = population.selectionTournament();
+        }
+        else if(selectionType == 2){
+            partners = population.selectionRoulette();
+        }else{
+            std::cout << "ABORTING" << std::endl;
+            break;
+        }
+
         //Cross specimens in population to get new generation
-        population.cross();
+        std::vector<Specimen> newGeneration = population.cross(partners);
+
+        //Mutate each specimen in new generation
+        for(auto e: newGeneration){
+            e.mutate();
+        }
+
+        //Save new generation
+        population.population = newGeneration;
     }
 
     return best;
@@ -205,9 +235,44 @@ Specimen geneticAlgorithm(Population population, float averageFitness){
     Specimen best = population.population.at(0);
     float accumulateFitness;
 
+    //UI - selecting selection
+    std::cout << "What selection?" << std::endl;
+    std::cout << "1.Tournament" << std::endl;
+    std::cout << "2.Roulette" << std::endl;
+    int selectionType = 0;
+    std::cin >> selectionType;
+    std::cout << std::endl;
+
     do{
+        //Selection select
+        std::vector<Specimen> partners;
+        if(selectionType == 1){
+            partners = population.selectionTournament();
+        }
+        else if(selectionType == 2){
+            partners = population.selectionRoulette();
+        }else{
+            std::cout << "ABORTING" << std::endl;
+            break;
+        }
+
         //Cross specimens in population to get new generation
-        population.cross();
+        std::vector<Specimen> newGeneration = population.cross(partners);
+
+        //Mutate each specimen in new generation
+        for(auto e: newGeneration){
+            e.mutate();
+        }
+
+        //Save new generation
+        population.population = newGeneration;
+
+        //Searching for best in current population
+        for (int j = 0; j < population.population.size(); j++) {
+            if(best.fitness() < population.population.at(j).fitness()){
+                best = population.population.at(j);
+            }
+        }
 
         //Reset the accumulateFitness
         accumulateFitness = 0;
@@ -231,6 +296,7 @@ int main( int argc, char** argv )
         fileName = argv[1];
     }
 
+    //Main loop of program
     do {
         //Scoped variables
         Solution problem;
@@ -243,14 +309,19 @@ int main( int argc, char** argv )
         std::cin >> option;
         std::cout << std::endl;
 
+        //From File
         if (option == 1) {
             std::cout << "What line you want to input?" << std::endl;
             std::cin >> option;
             std::cout << std::endl;
             problem.setAll(fileName, option);
-        } else if (option == 2) {
+        }
+        //Generator
+        else if (option == 2) {
             problem.setAll(generateVector());
-        } else if (option == 3) {
+        }
+        //Experiments TODO: I changed location of experiments so update this code !!!
+        else if (option == 3) {
             std::string filename;
             std::cout << "Tell me input file name." << std::endl;
             std::cin >> filename;
@@ -295,10 +366,32 @@ int main( int argc, char** argv )
             outTabu.close();
             outAnneal.close();
             break;
-        } else{
+        }
+        //DEV TESTING
+        else if(option == 666){
+            problem.setAll(generateVector());
+            problem.toString();
+            Specimen specimen(problem);
+
+            Population population(problem, 2);
+
+            for(int i=0; i<population.population.size(); i++){
+                population.population.at(i).solution.toStringMask();
+            }
+
+            std::vector<Specimen> newGen = population.cross(population.population, 6);
+
+            for(int i=0; i<newGen.size(); i++){
+                newGen.at(i).solution.toStringMask();
+            }
+
+            break;
+        }
+        else{
             break;
         }
 
+        //Algorithm part
         do {
             std::cout << "What type of algorithm to use?" << std::endl;
             std::cout << "1.Brute force." << std::endl;
@@ -344,10 +437,34 @@ int main( int argc, char** argv )
                 annealing.toString();
                 break;
             }
-                //GA
+                //GA TODO: make it usable in ALL and without brute ;)
             else if(option == 5){
                 Population population(problem, 10);
-                Specimen best = geneticAlgorithm(population, 1);
+                //UI
+                std::cout << "Do you want iterations or average fitness method?" << std::endl;
+                std::cout << "1.Iterations" << std::endl;
+                std::cout << "2.Average fitness" << std::endl;
+                std::cin >> option;
+                std::cout << std::endl;
+
+                //Selections select
+                Specimen best;
+                if(option == 1){
+                    //Ask for iterations
+                    std::cout << "How many iterations?" << std::endl;
+                    int iterations=0;
+                    std::cin >> iterations;
+                    std::cout << std::endl;
+
+                    best = geneticAlgorithm(population, iterations);
+                }
+                else if(option == 2){
+                    best = geneticAlgorithm(population, 0.9f);
+                }else{
+                    std::cout << "ABORTING" << std::endl;
+                    break;
+                }
+
                 best.solution.toString();
                 break;
             }
@@ -399,7 +516,6 @@ int main( int argc, char** argv )
                 std::cout << std::endl;
             }
         } while (true);
-
     } while(true);
 
 

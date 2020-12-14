@@ -14,9 +14,23 @@ public:
     Population(Solution solution, int populationSize);
 
     //---------------------------------------------------------------------------------------------------------- Methods
-    //Finds two specimens to reproduce from this population
-    std::vector<Specimen> selection();
+    //Creates vector Specimen of partners to be passed to cross method by roulette alg
+    std::vector<Specimen> selectionRoulette();
 
-    //Crosses specimens from selection to make whole new population
-    void cross();
+    //Creates vector Specimen of partners to be passed to cross method by tournament alg
+    std::vector<Specimen> selectionTournament();
+
+    /*
+     *
+     * Takes two next partners in vector and make cross of their Mask (which is almost like genome ;) )
+     *
+     * ARGUMENTS:
+     * - partners are stored in vector<Specimen> (NOTE: two partners should be one after another)
+     * - crossPointAmount is number of crossing between partners (default = 1)
+     * - chance is exactly that - chance of crossing partners (default = 1.0)
+     *
+     * RETURNS:
+     * - std::vector<Specimen> newGeneration, that holds whole new generation
+     */
+    std::vector<Specimen> cross(std::vector<Specimen> partners, int crossPointsAmount = 1, float chance = 1.0);
 };
