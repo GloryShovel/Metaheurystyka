@@ -195,6 +195,15 @@ Specimen geneticAlgorithm(Population population, int iterations){
     std::cin >> selectionType;
     std::cout << std::endl;
 
+    //If tournament then prepare participantsAmount
+    int participantsAmount;
+    if(selectionType == 1){
+        std::cout << "How many participants?" << std::endl;
+        std::cin >> participantsAmount;
+        std::cout << std::endl;
+    }
+
+    //Main loop of algorithm
     for (int i = 0; i < iterations; i++) {
 
         //Searching for best in current population
@@ -207,7 +216,7 @@ Specimen geneticAlgorithm(Population population, int iterations){
         //Selection select
         std::vector<Specimen> partners;
         if(selectionType == 1){
-            partners = population.selectionTournament();
+            partners = population.selectionTournament(participantsAmount);
         }
         else if(selectionType == 2){
             partners = population.selectionRoulette();
@@ -243,11 +252,20 @@ Specimen geneticAlgorithm(Population population, float averageFitness){
     std::cin >> selectionType;
     std::cout << std::endl;
 
+    //If tournament then prepare participantsAmount
+    int participantsAmount;
+    if(selectionType == 1){
+        std::cout << "How many participants?" << std::endl;
+        std::cin >> participantsAmount;
+        std::cout << std::endl;
+    }
+
+    //Main loop of algorithm
     do{
         //Selection select
         std::vector<Specimen> partners;
         if(selectionType == 1){
-            partners = population.selectionTournament();
+            partners = population.selectionTournament(participantsAmount);
         }
         else if(selectionType == 2){
             partners = population.selectionRoulette();
@@ -283,7 +301,7 @@ Specimen geneticAlgorithm(Population population, float averageFitness){
         }
         accumulateFitness /= population.population.size();
 
-    }while (accumulateFitness < averageFitness);
+    }while (accumulateFitness <= averageFitness);
 
     return best;
 }
@@ -369,21 +387,27 @@ int main( int argc, char** argv )
         }
         //DEV TESTING
         else if(option == 666){
+            //setting up population for testing
             problem.setAll(generateVector());
             problem.toString();
             Specimen specimen(problem);
 
-            Population population(problem, 2);
+            Population population(problem, 5);
 
-            for(int i=0; i<population.population.size(); i++){
-                population.population.at(i).solution.toStringMask();
+            //testing
+            std::cout << "population" << std::endl;
+            for(auto e: population.population){
+                std::cout << e.fitness() << ", ";
             }
+            std::cout << std::endl << std::endl;
 
-            std::vector<Specimen> newGen = population.cross(population.population, 6);
+            std::vector<Specimen> newGen = population.selectionRoulette();
 
-            for(int i=0; i<newGen.size(); i++){
-                newGen.at(i).solution.toStringMask();
+            std::cout << "newGen" << std::endl;
+            for(auto e: newGen){
+                std::cout << e.fitness() << ", ";
             }
+            std::cout << std::endl << std::endl;
 
             break;
         }
@@ -404,42 +428,56 @@ int main( int argc, char** argv )
             std::cin >> option;
             std::cout << std::endl;
 
-            problem.toString();
-
-                //FORCE
+            //FORCE
             if (option == 1) {
+                //UI - write problem to console
+                problem.toString();
+
                 Solution brute = bruteForce(problem);
                 brute.toString();
                 break;
             }
-                //HIll
+            //HIll
             else if (option == 2) {
+                //UI - write problem to console
+                problem.toString();
+
                 Solution hill = hillClimb(problem);
                 hill.toString();
                 break;
             }
-                //TABU
+            //TABU
             else if (option == 3) {
                 int iterations;
                 std::cout << "How many iterations?" << std::endl;
                 std::cin >> iterations;
                 std::cout << std::endl;
+
+                //UI - write problem to console
+                problem.toString();
+
                 Solution tab = tabu(problem, iterations);
                 tab.toString();
                 break;
             }
-                //ANNEALING
+            //ANNEALING
             else if(option == 4){
                 int iterations;
                 std::cout << "How many iterations?" << std::endl;
                 std::cin >> iterations;
+                std::cout << std::endl;
+
+                //UI - write problem to console
+                problem.toString();
+
                 Solution annealing = simulatedAnnealing(problem, iterations, [&](){return (double(iterations)/10)*iterations;});
                 annealing.toString();
                 break;
             }
-                //GA TODO: make it usable in ALL and without brute ;)
+            //GA TODO: make it usable in ALL and without brute ;)
             else if(option == 5){
                 Population population(problem, 10);
+
                 //UI
                 std::cout << "Do you want iterations or average fitness method?" << std::endl;
                 std::cout << "1.Iterations" << std::endl;
@@ -450,21 +488,37 @@ int main( int argc, char** argv )
                 //Selections select
                 Specimen best;
                 if(option == 1){
-                    //Ask for iterations
+                    //UI - ask for iterations
                     std::cout << "How many iterations?" << std::endl;
-                    int iterations=0;
+                    int iterations = 0;
                     std::cin >> iterations;
                     std::cout << std::endl;
 
+                    //UI - write problem to console
+                    problem.toString();
+
+                    //Find best solution
                     best = geneticAlgorithm(population, iterations);
                 }
                 else if(option == 2){
-                    best = geneticAlgorithm(population, 0.9f);
+                    //UI - ask for average fitness expected
+                    std::cout << "What fitness do you expect?" << std::endl;
+                    float fitnessExpected = 0.9;
+                    std::cin >> fitnessExpected;
+                    std::cout << std::endl << std::endl;
+
+                    //UI - write problem to console
+                    problem.toString();
+
+                    //Find best solution
+                    best = geneticAlgorithm(population, fitnessExpected);
                 }else{
                     std::cout << "ABORTING" << std::endl;
                     break;
                 }
 
+                //UI - write best solution to console
+                std::cout << "Fitness: " << best.fitness() << std::endl;
                 best.solution.toString();
                 break;
             }

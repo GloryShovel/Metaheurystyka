@@ -12,12 +12,12 @@ Specimen::Specimen(){}
 //-------------------------------------------------------------------------------------------------------------- Methods
 
 float Specimen::fitness(){
-    return  float(1/(1 + this->solution.score()));
+    return (float)1/(1 + this->solution.score());
 }
 
 void Specimen::mutate(int mutationAmount, float chance){
     std::uniform_real_distribution<float> realDistribution(0,1);
-    std::uniform_int_distribution<int> intDistribution(0, this->solution.Mask.size());
+    std::uniform_int_distribution<int> intDistribution(0, this->solution.Mask.size()-1);
     std::random_device rd;
 
     //Mutation loop

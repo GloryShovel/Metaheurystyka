@@ -17,8 +17,16 @@ public:
     //Creates vector Specimen of partners to be passed to cross method by roulette alg
     std::vector<Specimen> selectionRoulette();
 
-    //Creates vector Specimen of partners to be passed to cross method by tournament alg
-    std::vector<Specimen> selectionTournament();
+    /*
+     * Selects population.size() partners from population by tournament algorithm
+     *
+     * ARGUMENTS:
+     * - participantsAmount is number of participants of each tournament
+     *
+     * RETURN:
+     * - std::vector<Specimen> partners, that stores partners to make new generation
+     */
+    std::vector<Specimen> selectionTournament(int participantsAmount);
 
     /*
      *
